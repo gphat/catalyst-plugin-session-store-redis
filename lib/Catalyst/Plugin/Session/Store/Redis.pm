@@ -67,8 +67,13 @@ sub setup_session {
 
     $c->maybe::next::method(@_);
 
+    my $cfg = $c->config->{session};
+
     $c->_session_redis_storage(
-        Redis->new(server => '127.0.0.1:6379', debug => 0)
+        Redis->new(
+            server => $cfg->{redis_server} || '127.0.0.1:6379',
+            debug => $cfg->{redis_debug} || 0
+        )
     );
 }
 
