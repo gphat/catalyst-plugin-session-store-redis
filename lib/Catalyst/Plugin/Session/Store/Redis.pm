@@ -2,7 +2,74 @@ package Catalyst::Plugin::Session::Store::Redis;
 use warnings;
 use strict;
 
+use base qw/
+    Class::Data::Inheritable
+    Catalyst::Plugin::Session::Store
+/;
+use MRO::Compat;
+use MIME::Base64 qw(encode_base64 decode_base64);
+use Redis;
+use Storable qw/nfreeze thaw/;
+
 our $VERSION = '0.01';
+
+__PACKAGE__->mk_classdata(qw/_session_redis_storage/);
+__PACKAGE__->mk_classdata(qw/_session_redis_expires/);
+
+sub get_session_data {
+    my ($c, $key) = @_;
+
+    $c->log->error('get: '.$key);
+    if(my ($sid) = $key =~ /^expires:(.*)/) {
+
+        # return $c->_session_redis_storage->get($key);
+        my $ttl = $c->_session_redis_storage->ttl('session:'.$sid);
+        $c->log->error("get expire for $key ($sid) = $ttl");
+        return time;
+    } else {
+        my $data = $c->_session_redis_storage->get($key);
+        if(defined($data)) {
+            return thaw( decode_base64($data) )
+        }
+    }
+
+    return;
+}
+
+sub store_session_data {
+    my ($c, $key, $data) = @_;
+
+    $c->log->error("set: $key : $data");
+    if(my ($sid) = $key =~ /^expires:(.*)/) {
+        my $ttl = $data - time;
+        $c->log->error("set expire for $sid ($ttl)");
+        $c->_session_redis_storage->expire('session:'.$sid, $ttl);
+        # $c->_session_redis_storage->set($sid, $data);
+    } else {
+        $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)));
+    }
+
+    return;
+}
+
+sub delete_session_data {
+    my ($c, $sid) = @_;
+
+    $c->log->error('del: '.$sid);
+    $c->_session_redis_storage->del($sid);
+}
+
+sub setup_session {
+    my ($c) = @_;
+
+    $c->maybe::next::method(@_);
+
+    $c->_session_redis_storage(
+        Redis->new(server => '127.0.0.1:6379', debug => 1)
+    );
+}
+
+1;
 
 __END__
 
@@ -25,48 +92,6 @@ Perhaps a little code snippet.
 
 Cory G Watson, C<< <gphat at cpan.org> >>
 
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-catalyst-session-store-redis at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Catalyst-Session-Store-Redis>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc Catalyst::Session::Store::Redis
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Catalyst-Session-Store-Redis>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Catalyst-Session-Store-Redis>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Catalyst-Session-Store-Redis>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Catalyst-Session-Store-Redis/>
-
-=back
-
-
-=head1 ACKNOWLEDGEMENTS
-
-
 =head1 COPYRIGHT & LICENSE
 
 Copyright 2009 Cory G Watson.
@@ -77,7 +102,4 @@ by the Free Software Foundation; or the Artistic License.
 
 See http://dev.perl.org/licenses/ for more information.
 
-
 =cut
-
-1; # End of Catalyst::Session::Store::Redis
