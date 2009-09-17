@@ -10,14 +10,16 @@ use MRO::Compat;
 use MIME::Base64 qw(encode_base64 decode_base64);
 use Redis;
 use Storable qw/nfreeze thaw/;
+use Try::Tiny;
 
 our $VERSION = '0.01';
 
 __PACKAGE__->mk_classdata(qw/_session_redis_storage/);
-__PACKAGE__->mk_classdata(qw/_session_redis_expires/);
 
 sub get_session_data {
     my ($c, $key) = @_;
+
+    $c->_verify_redis_connection($c);
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
         $c->log->debug("Getting expires key for $sid");
@@ -36,6 +38,8 @@ sub get_session_data {
 sub store_session_data {
     my ($c, $key, $data) = @_;
 
+    $c->_verify_redis_connection($c);
+
     if(my ($sid) = $key =~ /^expires:(.*)/) {
         $c->log->debug("Setting expires key for $sid");
         $c->_session_redis_storage->set($key, $data);
@@ -50,8 +54,12 @@ sub store_session_data {
 sub delete_session_data {
     my ($c, $key) = @_;
 
+    $c->_verify_redis_connection($c);
+
     $c->log->error("Deleting: $key");
     $c->_session_redis_storage->del($key);
+
+    return;
 }
 
 sub setup_session {
@@ -62,6 +70,18 @@ sub setup_session {
     $c->_session_redis_storage(
         Redis->new(server => '127.0.0.1:6379', debug => 0)
     );
+}
+
+sub _verify_redis_connection {
+    my ($self, $c) = @_;
+
+    try {
+        $c->_session_redis_storage->ping;
+    } catch {
+        $self->_session_redis_storage(
+            Redis->new(server => '127.0.0.1:6379', debug => 0)
+        );
+    };
 }
 
 1;
