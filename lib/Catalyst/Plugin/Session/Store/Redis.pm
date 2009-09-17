@@ -19,14 +19,11 @@ __PACKAGE__->mk_classdata(qw/_session_redis_expires/);
 sub get_session_data {
     my ($c, $key) = @_;
 
-    $c->log->error('get: '.$key);
     if(my ($sid) = $key =~ /^expires:(.*)/) {
-
-        # return $c->_session_redis_storage->get($key);
-        my $ttl = $c->_session_redis_storage->ttl('session:'.$sid);
-        $c->log->error("get expire for $key ($sid) = $ttl");
-        return time;
+        $c->log->debug("Getting expires key for $sid");
+        return $c->_session_redis_storage->get($key);
     } else {
+        $c->log->debug("Getting $key");
         my $data = $c->_session_redis_storage->get($key);
         if(defined($data)) {
             return thaw( decode_base64($data) )
@@ -39,13 +36,11 @@ sub get_session_data {
 sub store_session_data {
     my ($c, $key, $data) = @_;
 
-    $c->log->error("set: $key : $data");
     if(my ($sid) = $key =~ /^expires:(.*)/) {
-        my $ttl = $data - time;
-        $c->log->error("set expire for $sid ($ttl)");
-        $c->_session_redis_storage->expire('session:'.$sid, $ttl);
-        # $c->_session_redis_storage->set($sid, $data);
+        $c->log->debug("Setting expires key for $sid");
+        $c->_session_redis_storage->set($key, $data);
     } else {
+        $c->log->debug("Getting $key");
         $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)));
     }
 
@@ -53,10 +48,10 @@ sub store_session_data {
 }
 
 sub delete_session_data {
-    my ($c, $sid) = @_;
+    my ($c, $key) = @_;
 
-    $c->log->error('del: '.$sid);
-    $c->_session_redis_storage->del($sid);
+    $c->log->error("Deleting: $key");
+    $c->_session_redis_storage->del($key);
 }
 
 sub setup_session {
@@ -65,7 +60,7 @@ sub setup_session {
     $c->maybe::next::method(@_);
 
     $c->_session_redis_storage(
-        Redis->new(server => '127.0.0.1:6379', debug => 1)
+        Redis->new(server => '127.0.0.1:6379', debug => 0)
     );
 }
 
