@@ -62,6 +62,22 @@ sub delete_session_data {
     return;
 }
 
+sub delete_expired_sessions {
+    my ($c) = @_;
+
+    $c->_verify_redis_connection;
+
+    $c->log->debug("Deleting expired session.");
+    my @expires = $c->_session_redis_storage->keys('expires:*');
+    my $now = time;
+    foreach my $exp (@expires) {
+        my $time = $c->_session_redis_storage->get($exp);
+        if($time < $now) {
+            $c->_session_redis_storage->del($exp);
+        }
+    }
+}
+
 sub setup_session {
     my ($c) = @_;
 
