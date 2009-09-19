@@ -56,7 +56,7 @@ sub delete_session_data {
 
     $c->_verify_redis_connection;
 
-    $c->log->error("Deleting: $key");
+    $c->log->debug("Deleting: $key");
     $c->_session_redis_storage->del($key);
 
     return;
