@@ -138,7 +138,21 @@ Catalyst::Plugin::Session::Store::Redis - The great new Catalyst::Plugin::Sessio
 =head1 DESCRIPTION
 
 C<Catalyst::Plugin::Session::Store::Redis> is a session storage plugin for
-Catalyst that uses the Redis key-value database.
+Catalyst that uses the Redis (L<http://code.google.com/p/redis/>) key-value
+database.
+
+=head1 NOTES
+
+=over 4
+
+=item B<Expired Sessions>
+
+This store does B<not> automatically expire sessions.  You can call
+C<delete_expired_sessions> to clear any expired sessions.  All sessions will
+then be checked, one at a time.  If a session has expired then it will be
+deleted.
+
+=back
 
 =head1 WARNING
 

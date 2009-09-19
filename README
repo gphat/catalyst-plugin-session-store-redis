@@ -1,55 +1,54 @@
-Catalyst-Session-Store-Redis
+NAME
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
+Catalyst::Plugin::Session::Store::Redis - The great new Catalyst::Plugin::Session::Store::Redis!
 
-A README file is required for CPAN modules since CPAN extracts the README
-file from a module distribution so that people browsing the archive
-can use it to get an idea of the module's uses. It is usually a good idea
-to provide version information here so that people can decide whether
-fixes for the module are worth downloading.
+SYNOPSIS
 
+    use Catalyst qw/
+        Session
+        Session::Store::Redis
+        Session::State::Foo
+    /;
+    
+    MyApp->config->{session} = {
+        expires => 3600,
+        redis_server => '127.0.0.1:6379',
+        redis_debug => 0 # or 1!
+    };
 
-INSTALLATION
+    # ... in an action:
+    $c->session->{foo} = 'bar'; # will be saved
 
-To install this module, run the following commands:
+DESCRIPTION
 
-	perl Makefile.PL
-	make
-	make test
-	make install
+Catalyst::Plugin::Session::Store::Redis is a session storage plugin for
+Catalyst that uses the Redis key-value database.
 
-SUPPORT AND DOCUMENTATION
+NOTES
 
-After installing, you can find documentation for this module with the
-perldoc command.
+Expired Sessions
 
-    perldoc Catalyst::Session::Store::Redis
+This store does B<not> automatically expire sessions.  You can call
+C<delete_expired_sessions> to clear any expired sessions.  All sessions will
+then be checked, one at a time.  If a session has expired then it will be
+deleted.
 
-You can also look for information at:
+WARNING
 
-    RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Catalyst-Session-Store-Redis
+This module is currently untested, outside of the unit tests it ships with.
+It will eventually be used with a busy site, but is currently unproven.
+Patches are welcome!
 
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/Catalyst-Session-Store-Redis
+AUTHOR
 
-    CPAN Ratings
-        http://cpanratings.perl.org/d/Catalyst-Session-Store-Redis
+Cory G Watson, C<< <gphat at cpan.org> >>
 
-    Search CPAN
-        http://search.cpan.org/dist/Catalyst-Session-Store-Redis/
+COPYRIGHT & LICENSE
 
-
-COPYRIGHT AND LICENCE
-
-Copyright (C) 2009 Cory G Watson
+Copyright 2009 Cold Hard Code, LLC.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
 by the Free Software Foundation; or the Artistic License.
 
 See http://dev.perl.org/licenses/ for more information.
-
