@@ -19,7 +19,7 @@ __PACKAGE__->mk_classdata(qw/_session_redis_storage/);
 sub get_session_data {
     my ($c, $key) = @_;
 
-    $c->_verify_redis_connection($c);
+    $c->_verify_redis_connection;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
         $c->log->debug("Getting expires key for $sid");
@@ -38,7 +38,7 @@ sub get_session_data {
 sub store_session_data {
     my ($c, $key, $data) = @_;
 
-    $c->_verify_redis_connection($c);
+    $c->_verify_redis_connection;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
         $c->log->debug("Setting expires key for $sid");
@@ -54,7 +54,7 @@ sub store_session_data {
 sub delete_session_data {
     my ($c, $key) = @_;
 
-    $c->_verify_redis_connection($c);
+    $c->_verify_redis_connection;
 
     $c->log->error("Deleting: $key");
     $c->_session_redis_storage->del($key);
@@ -78,13 +78,18 @@ sub setup_session {
 }
 
 sub _verify_redis_connection {
-    my ($self, $c) = @_;
+    my ($c) = @_;
+
+    my $cfg = $c->config->{session};
 
     try {
         $c->_session_redis_storage->ping;
     } catch {
-        $self->_session_redis_storage(
-            Redis->new(server => '127.0.0.1:6379', debug => 0)
+        $c->_session_redis_storage(
+            Redis->new(
+                server => $cfg->{redis_server} || '127.0.0.1:6379',
+                debug => $cfg->{redis_debug} || 0
+            )
         );
     };
 }
@@ -95,18 +100,35 @@ __END__
 
 =head1 NAME
 
-Catalyst::Session::Store::Redis - The great new Catalyst::Session::Store::Redis!
+Catalyst::Plugin::Session::Store::Redis - The great new Catalyst::Plugin::Session::Store::Redis!
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
+    use Catalyst qw/
+        Session
+        Session::Store::Redis
+        Session::State::Foo
+    /;
+    
+    MyApp->config->{session} = {
+        expires => 3600,
+        redis_server => '127.0.0.1:6379',
+        redis_debug => 0 # or 1!
+    };
 
-Perhaps a little code snippet.
+    # ... in an action:
+    $c->session->{foo} = 'bar'; # will be saved
 
-    use Catalyst::Session::Store::Redis;
+=head1 DESCRIPTION
 
-    my $foo = Catalyst::Session::Store::Redis->new();
-    ...
+C<Catalyst::Plugin::Session::Store::Redis> is a session storage plugin for
+Catalyst that uses the Redis key-value database.
+
+=head1 WARNING
+
+This module is currently untested, outside of the unit tests it ships with.
+It will eventually be used with a busy site, but is currently unproven.
+Patches are welcome!
 
 =head1 AUTHOR
 
