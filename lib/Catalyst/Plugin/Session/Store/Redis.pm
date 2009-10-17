@@ -83,7 +83,7 @@ sub setup_session {
 
     $c->maybe::next::method(@_);
 
-    my $cfg = $c->config->{session};
+    my $cfg = $c->_session_plugin_config;
 
     $c->_session_redis_storage(
         Redis->new(
@@ -96,7 +96,7 @@ sub setup_session {
 sub _verify_redis_connection {
     my ($c) = @_;
 
-    my $cfg = $c->config->{session};
+    my $cfg = $c->_session_plugin_config;
 
     try {
         $c->_session_redis_storage->ping;
@@ -126,7 +126,7 @@ Catalyst::Plugin::Session::Store::Redis - The great new Catalyst::Plugin::Sessio
         Session::State::Foo
     /;
     
-    MyApp->config->{session} = {
+    MyApp->config->{Plugin::Session} = {
         expires => 3600,
         redis_server => '127.0.0.1:6379',
         redis_debug => 0 # or 1!
