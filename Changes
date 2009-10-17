@@ -1,5 +1,8 @@
 Revision history for Catalyst-Plugin-Session-Store-Redis
 
+0.02
+    Keep up with changes in Catalyst-Plugin-Session
+
 0.01
         First version, released on an unsuspecting world.
 
