@@ -12,7 +12,7 @@ use Redis;
 use Storable qw/nfreeze thaw/;
 use Try::Tiny;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 __PACKAGE__->mk_classdata(qw/_session_redis_storage/);
 
@@ -41,12 +41,19 @@ sub store_session_data {
     $c->_verify_redis_connection;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
-        $c->log->debug("Setting expires key for $sid");
+        $c->log->debug("Setting expires key for $sid: $data");
         $c->_session_redis_storage->set($key, $data);
     } else {
-        $c->log->debug("Getting $key");
+        $c->log->debug("Setting $key");
         $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)));
     }
+
+    # We use expire, not expireat because it's a 1.2 feature and as of this
+    # release, 1.2 isn't done yet.
+    my $exp = $c->session_expires;
+    my $duration = $exp - time;
+    $c->_session_redis_storage->expire($key, $duration);
+    # $c->_session_redis_storage->expireat($key, $exp);
 
     return;
 }
@@ -65,17 +72,7 @@ sub delete_session_data {
 sub delete_expired_sessions {
     my ($c) = @_;
 
-    $c->_verify_redis_connection;
-
-    $c->log->debug("Deleting expired session.");
-    my @expires = $c->_session_redis_storage->keys('expires:*');
-    my $now = time;
-    foreach my $exp (@expires) {
-        my $time = $c->_session_redis_storage->get($exp);
-        if($time < $now) {
-            $c->_session_redis_storage->del($exp);
-        }
-    }
+    # Null op, Redis handles this for us!
 }
 
 sub setup_session {
@@ -83,14 +80,7 @@ sub setup_session {
 
     $c->maybe::next::method(@_);
 
-    my $cfg = $c->_session_plugin_config;
-
-    $c->_session_redis_storage(
-        Redis->new(
-            server => $cfg->{redis_server} || '127.0.0.1:6379',
-            debug => $cfg->{redis_debug} || 0
-        )
-    );
+    $c->_verify_redis_connection;
 }
 
 sub _verify_redis_connection {
@@ -104,7 +94,7 @@ sub _verify_redis_connection {
         $c->_session_redis_storage(
             Redis->new(
                 server => $cfg->{redis_server} || '127.0.0.1:6379',
-                debug => $cfg->{redis_debug} || 0
+                debug  => $cfg->{redis_debug} || 0
             )
         );
     };
@@ -116,7 +106,7 @@ __END__
 
 =head1 NAME
 
-Catalyst::Plugin::Session::Store::Redis - The great new Catalyst::Plugin::Session::Store::Redis!
+Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
 
 =head1 SYNOPSIS
 

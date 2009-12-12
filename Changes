@@ -1,5 +1,13 @@
 Revision history for Catalyst-Plugin-Session-Store-Redis
 
+0.03    December 12th, 2009
+    - Fix POD description
+    - Fix logging typo (said 'Getting key' when it meant 'Setting key')
+    - Use Redis' EXPIRE command to build in session expiration so we can
+      ignore it. As such, delete_expired_sessions is now a null-op.
+    - Unify connection code that was previously duplicated in setup_session
+    - Test against Redis 1.02 and 1.1.91-beta
+
 0.02
     Keep up with changes in Catalyst-Plugin-Session
 
