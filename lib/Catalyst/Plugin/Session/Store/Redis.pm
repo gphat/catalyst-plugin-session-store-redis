@@ -22,10 +22,8 @@ sub get_session_data {
     $c->_verify_redis_connection;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
-        $c->log->debug("Getting expires key for $sid");
         return $c->_session_redis_storage->get($key);
     } else {
-        $c->log->debug("Getting $key");
         my $data = $c->_session_redis_storage->get($key);
         if(defined($data)) {
             return thaw( decode_base64($data) )
@@ -41,10 +39,8 @@ sub store_session_data {
     $c->_verify_redis_connection;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
-        $c->log->debug("Setting expires key for $sid: $data");
         $c->_session_redis_storage->set($key, $data);
     } else {
-        $c->log->debug("Setting $key");
         $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)));
     }
 
@@ -94,7 +90,8 @@ sub _verify_redis_connection {
         $c->_session_redis_storage(
             Redis->new(
                 server => $cfg->{redis_server} || '127.0.0.1:6379',
-                debug  => $cfg->{redis_debug} || 0
+                debug  => $cfg->{redis_debug} || 0,
+                reconnect => $cfg->{redis_reconnect} || 60
             )
         );
     };
@@ -119,7 +116,8 @@ Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
     MyApp->config->{Plugin::Session} = {
         expires => 3600,
         redis_server => '127.0.0.1:6379',
-        redis_debug => 0 # or 1!
+        redis_debug => 0, # or 1!
+        redis_reconnect => 60 # 60 is default
     };
 
     # ... in an action:
