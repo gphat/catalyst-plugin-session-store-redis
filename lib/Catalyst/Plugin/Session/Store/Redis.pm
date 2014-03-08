@@ -22,8 +22,10 @@ sub get_session_data {
     $c->_verify_redis_connection;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
+        $c->log->debug("Getting expires key for $sid") if $c->debug;
         return $c->_session_redis_storage->get($key);
     } else {
+        $c->log->debug("Getting $key") if $c->debug;
         my $data = $c->_session_redis_storage->get($key);
         if(defined($data)) {
             return thaw( decode_base64($data) )
@@ -39,8 +41,10 @@ sub store_session_data {
     $c->_verify_redis_connection;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
+        $c->log->debug("Setting expires key for $sid: $data") if $c->debug;
         $c->_session_redis_storage->set($key, $data);
     } else {
+        $c->log->debug("Setting $key") if $c->debug;
         $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)));
     }
 
@@ -59,7 +63,7 @@ sub delete_session_data {
 
     $c->_verify_redis_connection;
 
-    $c->log->debug("Deleting: $key");
+    $c->log->debug("Deleting: $key") if $c->debug;
     $c->_session_redis_storage->del($key);
 
     return;
