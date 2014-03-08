@@ -12,7 +12,7 @@ use Redis;
 use Storable qw/nfreeze thaw/;
 use Try::Tiny;
 
-our $VERSION = '0.03';
+our $VERSION = '0.06';
 
 __PACKAGE__->mk_classdata(qw/_session_redis_storage/);
 
