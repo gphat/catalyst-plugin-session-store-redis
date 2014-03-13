@@ -13,7 +13,8 @@ SYNOPSIS
     MyApp->config->{session} = {
         expires => 3600,
         redis_server => '127.0.0.1:6379',
-        redis_debug => 0 # or 1!
+        redis_debug => 0, # or 1!
+        redis_reconnect => 60 # 60 is default
     };
 
     # ... in an action:

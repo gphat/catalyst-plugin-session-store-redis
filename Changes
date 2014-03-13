@@ -1,5 +1,14 @@
 Revision history for Catalyst-Plugin-Session-Store-Redis
 
+0.06  March 8th, 2014
+   - Fix disconnection Redis Server
+   - Add option configuration redis_reconnect
+   - Removed Catalyst log debug
+
+0.05
+
+0.04
+
 0.03    December 12th, 2009
     - Fix POD description
     - Fix logging typo (said 'Getting key' when it meant 'Setting key')
