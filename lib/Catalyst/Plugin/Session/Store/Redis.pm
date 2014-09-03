@@ -89,7 +89,7 @@ sub _verify_redis_connection {
     my $cfg = $c->_session_plugin_config;
 
     try {
-        $c->_session_redis_storage->ping;
+        $c->_session_redis_storage->ping or die "failed to ping";
     } catch {
         $c->_session_redis_storage(
             Redis->new(
