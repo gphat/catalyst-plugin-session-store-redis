@@ -39,17 +39,18 @@ sub store_session_data {
     my ($c, $key, $data) = @_;
 
     $c->_verify_redis_connection;
-    my $exp = $c->session_expires;
-    my $duration = $exp - time;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
         $c->log->debug("Setting expires key for $sid: $data") if $c->debug;
-        $c->_session_redis_storage->set($key, $data, $duration);
+        $c->_session_redis_storage->set($key, $data);
     } else {
         $c->log->debug("Setting $key") if $c->debug;
-        $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)), $duration);
+        $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)));
     }
 
+    my $exp = $c->session_expires;
+    my $duration = $exp - time;
+    $c->_session_redis_storage->expire($key, $duration);
     return;
 }
 
