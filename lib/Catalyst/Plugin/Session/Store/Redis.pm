@@ -88,7 +88,7 @@ sub _verify_redis_connection {
     } catch {
         # Exract redis options
         my %redisCfg = map {
-            (my $k = $_) =~ s/^redis_/;
+            (my $k = $_) =~ s/^redis_//;
             ($k => $cfg->{$_})
         } grep{ $_ =~ m/^redis_/ } keys %$cfg;
 
