@@ -39,21 +39,16 @@ sub store_session_data {
     my ($c, $key, $data) = @_;
 
     $c->_verify_redis_connection;
+    my $exp = $c->session_expires;
+    my $duration = $exp - time;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
         $c->log->debug("Setting expires key for $sid: $data") if $c->debug;
-        $c->_session_redis_storage->set($key, $data);
+        $c->_session_redis_storage->set($key, $data, $duration);
     } else {
         $c->log->debug("Setting $key") if $c->debug;
-        $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)));
+        $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)), $duration);
     }
-
-    # We use expire, not expireat because it's a 1.2 feature and as of this
-    # release, 1.2 isn't done yet.
-    my $exp = $c->session_expires;
-    my $duration = $exp - time;
-    $c->_session_redis_storage->expire($key, $duration);
-    # $c->_session_redis_storage->expireat($key, $exp);
 
     return;
 }
@@ -116,7 +111,7 @@ Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
         Session::Store::Redis
         Session::State::Foo
     /;
-    
+
     MyApp->config->{Plugin::Session} = {
         expires => 3600,
         redis_server => '127.0.0.1:6379',
