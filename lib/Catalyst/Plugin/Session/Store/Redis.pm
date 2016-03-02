@@ -86,12 +86,19 @@ sub _verify_redis_connection {
     try {
         $c->_session_redis_storage->ping or die "failed to ping";
     } catch {
+        # Exract redis options
+        my %redisCfg = map {
+            (my $k = $_) =~ s/^redis_/;
+            ($k => $cfg->{$_})
+        } grep{ $_ =~ m/^redis_/ } keys %$cfg;
+
+        $redisCfg{server} ||= '127.0.0.1:6379' if (!exists $redisCfg{sock});
+        $redisCfg{debug} ||= 0;
+        $redisCfg{redis_reconnect} ||= 60;
+
+
         $c->_session_redis_storage(
-            Redis->new(
-                server => $cfg->{redis_server} || '127.0.0.1:6379',
-                debug  => $cfg->{redis_debug} || 0,
-                reconnect => $cfg->{redis_reconnect} || 60
-            )
+            Redis->new(%redisCfg)
         );
     };
 }
