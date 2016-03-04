@@ -42,7 +42,7 @@ Patches are welcome!
 Cory G Watson, `<gphat at cpan.org>`
 Yusuke Watase
 luma
-Gerard Ribugent Navarro << &lt;ribugent at cpan.org> >>
+Gerard Ribugent Navarro `<ribugent at cpan.org>`
 
 # COPYRIGHT & LICENSE
 

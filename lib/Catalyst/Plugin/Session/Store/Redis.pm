@@ -153,7 +153,7 @@ Patches are welcome!
 Cory G Watson, C<< <gphat at cpan.org> >>
 Yusuke Watase
 luma
-Gerard Ribugent Navarro << <ribugent at cpan.org> >>
+Gerard Ribugent Navarro C<< <ribugent at cpan.org> >>
 
 =head1 COPYRIGHT & LICENSE
 
