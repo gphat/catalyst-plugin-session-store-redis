@@ -9,7 +9,7 @@ Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
         Session::Store::Redis
         Session::State::Foo
     /;
-    
+
     MyApp->config->{Plugin::Session} = {
         expires => 3600,
         redis_server => '127.0.0.1:6379',
@@ -23,17 +23,13 @@ Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
 # DESCRIPTION
 
 `Catalyst::Plugin::Session::Store::Redis` is a session storage plugin for
-Catalyst that uses the Redis ([http://code.google.com/p/redis/](http://code.google.com/p/redis/)) key-value
+Catalyst that uses the Redis ([http://redis.io](http://redis.io)) key-value
 database.
 
-# NOTES
+# CONFIGURATION
 
-- **Expired Sessions**
-
-    This store does **not** automatically expire sessions.  You can call
-    `delete_expired_sessions` to clear any expired sessions.  All sessions will
-    then be checked, one at a time.  If a session has expired then it will be
-    deleted.
+By default it will use 127.0.0.1:6379 as server, and enables autoreconnect after 60 if the connection fails. In addition
+you can use any configuration parameter of `Redis` prefixing "redis\_"  in the hash under the `Plugin::Session`
 
 # WARNING
 
@@ -41,9 +37,12 @@ This module is currently untested, outside of the unit tests it ships with.
 It will eventually be used with a busy site, but is currently unproven.
 Patches are welcome!
 
-# AUTHOR
+# AUTHORS
 
 Cory G Watson, `<gphat at cpan.org>`
+Yusuke Watase
+luma
+Gerard Ribugent Navarro << &lt;ribugent at cpan.org> a>>
 
 # COPYRIGHT & LICENSE
 
