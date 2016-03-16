@@ -15,6 +15,7 @@ Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
         redis_server => '127.0.0.1:6379',
         redis_debug => 0, # or 1!
         redis_reconnect => 60 # 60 is default
+        implementation => 'Redis' # Redis by default, or you can use Redis::Fast
     };
 
     # ... in an action:
