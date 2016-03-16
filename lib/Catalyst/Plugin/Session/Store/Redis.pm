@@ -6,9 +6,9 @@ use base qw/
     Class::Data::Inheritable
     Catalyst::Plugin::Session::Store
 /;
+use Module::Load;
 use MRO::Compat;
 use MIME::Base64 qw(encode_base64 decode_base64);
-use Redis;
 use Storable qw/nfreeze thaw/;
 use Try::Tiny;
 
@@ -97,9 +97,11 @@ sub _verify_redis_connection {
         $redisCfg{debug} ||= 0;
         $redisCfg{redis_reconnect} ||= 60;
 
+        my $implementation = $cfg->{implementation} || 'Redis';
+        load $implementation;
 
         $c->_session_redis_storage(
-            Redis->new(%redisCfg)
+            $implementation->new(%redisCfg)
         );
     };
 }
@@ -125,6 +127,7 @@ Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
         redis_server => '127.0.0.1:6379',
         redis_debug => 0, # or 1!
         redis_reconnect => 60 # 60 is default
+        implementation => 'Redis' # Redis by default, or you can use Redis::Fast
     };
 
     # ... in an action:
