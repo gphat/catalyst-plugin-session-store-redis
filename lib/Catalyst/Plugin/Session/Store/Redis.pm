@@ -48,9 +48,7 @@ sub store_session_data {
         $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)));
     }
 
-    my $exp = $c->session_expires;
-    my $duration = $exp - time;
-    $c->_session_redis_storage->expire($key, $duration);
+    $c->_session_redis_storage->expireat($key, $c->session_expires);
     return;
 }
 
