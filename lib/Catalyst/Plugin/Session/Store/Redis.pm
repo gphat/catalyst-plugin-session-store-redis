@@ -12,7 +12,7 @@ use Redis;
 use Storable qw/nfreeze thaw/;
 use Try::Tiny;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 __PACKAGE__->mk_classdata(qw/_session_redis_storage/);
 
@@ -91,11 +91,16 @@ sub _verify_redis_connection {
     try {
         $c->_session_redis_storage->ping;
     } catch {
+        my %redis_cfg;
+        while (my ($ck, $cv) = each %$cfg) {
+            next unless $ck =~ /^redis_(.+)/;
+            $redis_cfg{$1} = $cv;
+        }
+
+        $redis_cfg{server} ||= '127.0.0.1:6379';
+
         $c->_session_redis_storage(
-            Redis->new(
-                server => $cfg->{redis_server} || '127.0.0.1:6379',
-                debug  => $cfg->{redis_debug} || 0
-            )
+            Redis->new(%redis_cfg)
         );
     };
 }
@@ -119,7 +124,10 @@ Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
     MyApp->config->{Plugin::Session} = {
         expires => 3600,
         redis_server => '127.0.0.1:6379',
-        redis_debug => 0 # or 1!
+        redis_debug => 0, # or 1!
+        redis_password => 'password',
+        redis_reconnect => 60,
+        redis_every => 5000,
     };
 
     # ... in an action:
