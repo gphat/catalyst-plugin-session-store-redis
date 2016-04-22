@@ -1,5 +1,19 @@
 Revision history for Catalyst-Plugin-Session-Store-Redis
 
+0.10 March 4th, 2016
+  - Allow to pass any configuration parameter to Redis
+  - Force Redis at least 1.977
+  - Update docs
+
+0.06  March 8th, 2014
+   - Fix disconnection Redis Server
+   - Add option configuration redis_reconnect
+   - Removed Catalyst log debug
+
+0.05
+
+0.04
+
 0.03    December 12th, 2009
     - Fix POD description
     - Fix logging typo (said 'Getting key' when it meant 'Setting key')

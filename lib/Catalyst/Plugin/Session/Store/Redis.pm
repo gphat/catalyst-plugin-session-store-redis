@@ -6,13 +6,13 @@ use base qw/
     Class::Data::Inheritable
     Catalyst::Plugin::Session::Store
 /;
+use Module::Load;
 use MRO::Compat;
 use MIME::Base64 qw(encode_base64 decode_base64);
-use Redis;
 use Storable qw/nfreeze thaw/;
 use Try::Tiny;
 
-our $VERSION = '0.03';
+our $VERSION = '0.10';
 
 __PACKAGE__->mk_classdata(qw/_session_redis_storage/);
 
@@ -22,10 +22,10 @@ sub get_session_data {
     $c->_verify_redis_connection;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
-        $c->log->debug("Getting expires key for $sid");
+        $c->log->debug("Getting expires key for $sid") if $c->debug;
         return $c->_session_redis_storage->get($key);
     } else {
-        $c->log->debug("Getting $key");
+        $c->log->debug("Getting $key") if $c->debug;
         my $data = $c->_session_redis_storage->get($key);
         if(defined($data)) {
             return thaw( decode_base64($data) )
@@ -41,20 +41,14 @@ sub store_session_data {
     $c->_verify_redis_connection;
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
-        $c->log->debug("Setting expires key for $sid: $data");
+        $c->log->debug("Setting expires key for $sid: $data") if $c->debug;
         $c->_session_redis_storage->set($key, $data);
     } else {
-        $c->log->debug("Setting $key");
+        $c->log->debug("Setting $key") if $c->debug;
         $c->_session_redis_storage->set($key, encode_base64(nfreeze($data)));
     }
 
-    # We use expire, not expireat because it's a 1.2 feature and as of this
-    # release, 1.2 isn't done yet.
-    my $exp = $c->session_expires;
-    my $duration = $exp - time;
-    $c->_session_redis_storage->expire($key, $duration);
-    # $c->_session_redis_storage->expireat($key, $exp);
-
+    $c->_session_redis_storage->expireat($key, $c->session_expires);
     return;
 }
 
@@ -63,7 +57,7 @@ sub delete_session_data {
 
     $c->_verify_redis_connection;
 
-    $c->log->debug("Deleting: $key");
+    $c->log->debug("Deleting: $key") if $c->debug;
     $c->_session_redis_storage->del($key);
 
     return;
@@ -89,13 +83,23 @@ sub _verify_redis_connection {
     my $cfg = $c->_session_plugin_config;
 
     try {
-        $c->_session_redis_storage->ping;
+        $c->_session_redis_storage->ping or die "failed to ping";
     } catch {
+        # Exract redis options
+        my %redisCfg = map {
+            (my $k = $_) =~ s/^redis_//;
+            ($k => $cfg->{$_})
+        } grep{ $_ =~ m/^redis_/ } keys %$cfg;
+
+        $redisCfg{server} ||= '127.0.0.1:6379' if (!exists $redisCfg{sock});
+        $redisCfg{debug} ||= 0;
+        $redisCfg{redis_reconnect} ||= 60;
+
+        my $implementation = $cfg->{implementation} || 'Redis';
+        load $implementation;
+
         $c->_session_redis_storage(
-            Redis->new(
-                server => $cfg->{redis_server} || '127.0.0.1:6379',
-                debug  => $cfg->{redis_debug} || 0
-            )
+            $implementation->new(%redisCfg)
         );
     };
 }
@@ -115,11 +119,13 @@ Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
         Session::Store::Redis
         Session::State::Foo
     /;
-    
+
     MyApp->config->{Plugin::Session} = {
         expires => 3600,
         redis_server => '127.0.0.1:6379',
-        redis_debug => 0 # or 1!
+        redis_debug => 0, # or 1!
+        redis_reconnect => 60 # 60 is default
+        implementation => 'Redis' # Redis by default, or you can use Redis::Fast
     };
 
     # ... in an action:
@@ -128,21 +134,14 @@ Catalyst::Plugin::Session::Store::Redis - Redis Session store for Catalyst
 =head1 DESCRIPTION
 
 C<Catalyst::Plugin::Session::Store::Redis> is a session storage plugin for
-Catalyst that uses the Redis (L<http://code.google.com/p/redis/>) key-value
+Catalyst that uses the Redis (L<http://redis.io>) key-value
 database.
 
-=head1 NOTES
+=head1 CONFIGURATION
 
-=over 4
+By default it will use 127.0.0.1:6379 as server, and enables autoreconnect after 60 if the connection fails. In addition
+you can use any configuration parameter of C<Redis> prefixing "redis_"  in the hash under the C<Plugin::Session>
 
-=item B<Expired Sessions>
-
-This store does B<not> automatically expire sessions.  You can call
-C<delete_expired_sessions> to clear any expired sessions.  All sessions will
-then be checked, one at a time.  If a session has expired then it will be
-deleted.
-
-=back
 
 =head1 WARNING
 
@@ -150,9 +149,12 @@ This module is currently untested, outside of the unit tests it ships with.
 It will eventually be used with a busy site, but is currently unproven.
 Patches are welcome!
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Cory G Watson, C<< <gphat at cpan.org> >>
+Yusuke Watase
+luma
+Gerard Ribugent Navarro C<< <ribugent at cpan.org> >>
 
 =head1 COPYRIGHT & LICENSE
 
