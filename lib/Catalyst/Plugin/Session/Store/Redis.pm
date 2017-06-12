@@ -21,6 +21,8 @@ sub get_session_data {
 
     $c->_verify_redis_connection;
 
+    $key = _apply_key_prefix($c, $key);
+
     if(my ($sid) = $key =~ /^expires:(.*)/) {
         $c->log->debug("Getting expires key for $sid");
         return $c->_session_redis_storage->get($key);
@@ -39,6 +41,7 @@ sub store_session_data {
     my ($c, $key, $data) = @_;
 
     $c->_verify_redis_connection;
+    $key = _apply_key_prefix($c, $key);
 
     if(my ($sid) = $key =~ /^expires:(.*)/) {
         $c->log->debug("Setting expires key for $sid: $data");
@@ -60,6 +63,8 @@ sub store_session_data {
 
 sub delete_session_data {
     my ($c, $key) = @_;
+
+    $key = _apply_key_prefix($c, $key);
 
     $c->_verify_redis_connection;
 
@@ -98,6 +103,17 @@ sub _verify_redis_connection {
             )
         );
     };
+}
+
+sub _apply_key_prefix {
+    my ($c, $key) = @_;
+
+    my $key_prefix = $c->_session_plugin_config->{key_prefix};
+    return $key if !$key_prefix;
+
+    my ($category, $session_id) = split(':', $key);
+    my @key = ($category, $key_prefix, $session_id);
+    return join(':', @key);
 }
 
 1;
